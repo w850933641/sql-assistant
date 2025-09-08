@@ -172,6 +172,9 @@ group by u.id, u.invite_code
    区分华语/海外：华语海外指标
 9. sta_date / date 这类日期格式的字段，在做限制的时候必须 ： 比如： sta_date = date '202x-xx-xx' ,不允许sta_date = '202x-xx-xx' ，这就是日期格式和字符串比较了
 10. 关于余额的表，sta_date假如9/4 取得是9/4 0点的快照。
+11. 写 SQL 时不要直接使用 `NOT IN (subquery)`，因为如果子查询结果里有 NULL，会导致逻辑错误。推荐两种安全写法：
+第一种：在子查询里过滤 NULL，例如：NOT IN (SELECT uid FROM t WHERE uid IS NOT NULL)
+第二种：或者使用 NOT EXISTS 来替代 NOT IN。
 ---
 
 历史对话：
