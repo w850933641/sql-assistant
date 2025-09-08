@@ -9,7 +9,7 @@ from langchain.memory import ConversationBufferMemory
 llm = ChatOpenAI(
     model="gpt-5",  # 或 gpt-4.1，如果你开通了
     temperature=0,
-    openai_api_key="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"
+    openai_api_key=os.getenv("OPENAI_API_KEY")   # 关键
 )
 
 # 初始化 Memory
