@@ -36,6 +36,11 @@ prompt = PromptTemplate(
 - deal_amount_total:合约交易量
 - deal_amount_spot：现货成交量
 - topup_amount: 入金金额
+- retention_fee_theo_C	合约留存手续费(扣除各种抵扣和反佣之后的手续费)
+- retention_fee_theo_S	现货留存手续费
+- retention_fee_theo	total留存手续费
+- fee_deducted_C	合约手续费_扣除全部(扣除各种抵扣之后的手续费)
+- fee_deducted	    手续费_扣除全部
 
 ### 表：user_bydaybase_vip  vip用户表 ，有分区，分区字段sta_date
 - sta_date：日期
@@ -88,6 +93,45 @@ FROM analysis_report.std_eff_new_eftts
 - sta_date：日期分区（需要哪一天的balance就设置那一天即可） 
 - mark_price : 那一天的折合美金的汇率
  
+### 表：agent_bydaybase_all_clean 这个表是代理每日数据，包括他伞下用户的交易数据(单位：美金)的加总，有分区
+- sta_date: 分区字段
+- agent_name: 代理名称
+- agent_user_id: 代理user_id
+- create_time: 代理创建时间
+- agent_level: 代理层级 ，0 是最高 ，然后往下1，2，3。。。
+- agent_rebate_rate	代理返佣比例
+- partner: 所属partner
+- staff: 所属商务
+- topup_amount: 充值金额
+- transfer_amount: 内转金额
+- withdraw_amount: 提现金额
+- net_topup: 净充提
+- topup_cnt: 充值笔数
+- withdraw_cnt: 提现笔数
+- topup_user_cnt: 充值人数
+- withdraw_user_cnt: 提现人数
+- topup_fee: 充值手续费
+- withdraw_fee: 提现手续费
+- rebate_amount_agent: 代理返佣
+- rebate_amount_user: 人人返佣
+- rebate_amount_total: 总返佣
+- bonus_amount_issue: 赠金发出
+- bonus_amount_recycle: 赠金收回
+- cust_cnt: 注册人数
+- eff_user_cnt: 有效新增人数
+- eff_user_cnt_eftts: 有效新增人数_现货eftts
+- eff_user_cnt_overseas: 有效新增人数_海外
+- fst_topup_cnt: 首充人数
+- 合约（pro）交易量 ：deal_amount_total 
+- 合约手续费 fee_total(负数，需要abs绝对值一下)
+- 现货交易量，deal_amount_spot
+- 现货手续费 fee_spot(负数，需要abs绝对值一下)
+
+如果计算 total 交易量， deal_amount_spot+ deal_amount_total
+        total 手续费， fee_total +  fee_spot (负数，需要abs绝对值一下)
+
+
+
 ## 数据库二：analytics_flink
 
 ### 表：user_agent_relation_full 这个表包含所有的用户，无需分区
@@ -100,24 +144,11 @@ FROM analysis_report.std_eff_new_eftts
 ### 表：user_info 这个表包含所有的用户，无需分区
 - id：用户ID
 - created_date: 注册时间
-- language_type: 使用语言：case when u.language_type=0 then '英语'
-                                when u.language_type=1 then '简体中文'
-                                when u.language_type=3 then '韩语'
-                                when u.language_type=4 then '越南语'
-                                when u.language_type=5 then '繁体中文'
-                                when u.language_type=6 then '俄语'
-                                when u.language_type=7 then '西班牙语'
-                                when u.language_type=8 then '波斯语'
-                                when u.language_type=9 then '阿拉伯语'
-                                when u.language_type=11 then '俄罗斯语'
-                                when u.language_type=12 then '乌克兰语'
-                                when u.language_type=13 then '德语'
-                                when u.language_type=14 then '西班牙语(欧洲）'
-                                when u.language_type=15 then '西班牙语（拉美）'
-                                when u.language_type=16 then '法语'
-                                when u.language_type=17 then '波兰语'
-                                else '其他'
-                                end as 使用语言,
+- language_type:language_type: 是枚举数字 0,1,2... 没办法直接用需要连表：
+    select a.id,b.language_name  from 
+    analytics_flink.user_info a 
+    left join analytics_flink.user_language_type b 
+    on a.language_type = b.language_id
 - register_channel：如果 = 'Invitefriends'， 表示这个人是被邀请过来的
 - register_vip_no：该用户填写的邀请码 
 - invite_code：这个用户的自身邀请码
@@ -126,15 +157,13 @@ FROM analysis_report.std_eff_new_eftts
 - user_id：用户ID
 - created_date :登陆时间
 
-### 表：user_commitment_record welaunch活动表，用户质押committed_currency，我们给他活动代币和可能也给usdt
+### 表：user_commitment_record welaunch活动表，用户质押committed_currency，我们给他活动代币，可能也给usdt
 - user_id：用户ID
 - create_time :报名时间,这个格式是Unix 时间戳（毫秒级），需要转化为：to_date(from_unixtime(cast(create_time/1000 as bigint)))再做使用
 - token_name :活动代币
 - committed_currency :质押代币    
 - token_airdrop_amount ：奖励给用户的活动代币的数量
 - second_airdrop_token_amount：直接奖励给用户usdt
-
-
 
 ---
 
