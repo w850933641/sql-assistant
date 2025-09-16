@@ -28,7 +28,6 @@ prompt = PromptTemplate(
 我们公司是一个数字货币交易所，系统有一些数据库：
 
 ---
-
 ## 数据库一：analysis_report
 ### 表：user_bydaybase_all_clean 用户每天的维度数据，有分区，分区字段sta_date,只要这一天用户有一些transaction的行为，就会进入这一天的分区
 - sta_date：日期
@@ -131,7 +130,6 @@ FROM analysis_report.std_eff_new_eftts
         total 手续费， fee_total +  fee_spot (负数，需要abs绝对值一下)
 
 
-
 ## 数据库二：analytics_flink
 
 ### 表：user_agent_relation_full 这个表包含所有的用户，无需分区
@@ -142,7 +140,7 @@ FROM analysis_report.std_eff_new_eftts
 - staff :商务
 
 ### 表：user_info 这个表包含所有的用户，无需分区
-- id：用户ID
+- id：用户ID，通常为其他表的user_id
 - created_date: 注册时间
 - language_type:language_type: 是枚举数字 0,1,2... 没办法直接用需要连表：
     select a.id,b.language_name  from 
@@ -152,7 +150,22 @@ FROM analysis_report.std_eff_new_eftts
 - register_channel：如果 = 'Invitefriends'， 表示这个人是被邀请过来的
 - register_vip_no：该用户填写的邀请码 
 - invite_code：这个用户的自身邀请码
+- identity_type: KYC证件认证类型，0未认证，1身份证，2护照，3驾照
+
+### 表：area_info  
+- area_code: 与user_info表里的area_code对应，得到的english_name为手机号国籍
+- id: 与user_info表里的area_id对应，得到的english_name为KYC国籍
+
+### 表：user_settings  
+- user_id: 用户ID
+- email_bind_flag: 如果等于1 ，代表用户绑定了邮箱；等于0就是没绑定邮箱
+- mobile_bind_flag: 如果等于1代表绑定手机号；等于0就是没绑定手机号
              
+### 表：jiguang_mapping  
+- user_id: 用户ID
+- jiguang_id: 极光id，运营要触达用户时会需要使用极光ID
+ 
+
 ### 表：user_login_record 用户的登录名细，无需分区
 - user_id：用户ID
 - created_date :登陆时间
@@ -164,6 +177,32 @@ FROM analysis_report.std_eff_new_eftts
 - committed_currency :质押代币    
 - token_airdrop_amount ：奖励给用户的活动代币的数量
 - second_airdrop_token_amount：直接奖励给用户usdt
+
+##数据库三：activity_general
+### 表：activity_user_apply 看某个用户在什么时候申请了某项活动。
+- user_id: 用户ID
+- activity_id: 活动id
+- apply_time: 申请时间
+
+### 表：activity_user_completion 看某项任务（task_id）的完成情况。如果complete_time是null代表尚未完成。
+- user_id: 用户ID
+- activity_id: 活动id
+- task_id: 任务id
+- complete_time: 完成任务时间
+
+### 表：activity_config  看活动的开始和结束时间
+- id: 和其他活动表的activity_id相连接
+- start_time: 活动开始时间
+- end_time: 活动结束时间
+
+### 表：activity_user_reward  活动发奖明细表,发一次奖就会有一行记录。
+- activity_id: 活动id
+- user_id: 用户ID
+- task_id: 任务id
+- bonus_name: 发放奖励的币种或者“仓位空投”
+- bonus_amount: 为对应币种的数量(如果name是仓位空投的话则amount为价值多少U）。
+- reward_time :奖励发放时间
+
 
 ---
 
