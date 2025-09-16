@@ -243,6 +243,40 @@ group by u.id, u.invite_code
 11. 写 SQL 时不要直接使用 `NOT IN (subquery)`，因为如果子查询结果里有 NULL，会导致逻辑错误。推荐两种安全写法：
 第一种：在子查询里过滤 NULL，例如：NOT IN (SELECT uid FROM t WHERE uid IS NOT NULL)
 第二种：或者使用 NOT EXISTS 来替代 NOT IN。
+12.如果涉及到合约交易的币种相关sql，用这个逻辑：
+    select t2.user_id
+        ,date(t1.created_time) as sta_date
+        , t3.coin_id
+        , t1.fill_value as amount  --合约交易量 （单位：美金）
+        , t1.fill_fee as fee --合约手续费 （单位：美金）
+    from analytics_uni_margin.t_order_fill_transaction_clean as t1
+    left join analytics_uni_margin.t_account as t2 on t1.account_id = t2.id
+    LEFT JOIN analytics_uni_margin.coin_contract_mapping AS t3 ON t1.contract_id = t3.contractId
+    
+如果涉及现货交易的币种相关sql，用这个逻辑（适用于2025年7月之后）：
+select t2.user_id
+    , t1.created_time
+    , coin_name
+    , t1.fill_value as deal_amount_spot
+    , (case when t1.order_side = 1 then -t1.fill_fee * ifnull(mp.mark_price, 0)
+			when t1.order_side = 2 then -t1.fill_fee end) as fee
+from spot_history_server.t_spot_order_fill_transaction as t1
+left join spot_history_server.t_spot_account as t2 on t1.account_id = t2.id
+left join spot_history_server.spot_coin_pro t3 on t1.base_coin_id = t3.coin_id   
+left join dwm.spot_pro_tickers_price as mp on date(t1.created_time) = mp.sta_date and t3.coin_name = mp.coin_id  
+where t2.user_id not in (select id from analytics_flink.user_info where remark like '%外部做市%') -- 去除外部做市账号
+    and t1.match_account_id != t1.account_id -- 去除自己跟自己的对手盘
+    and t1.order_side in (1, 2)
+    
+13.如果涉及到杠杆倍数，用如下sql：
+    select t2.user_id
+        , avg(after_leverage) as avg_leverage
+    FROM analytics_uni_margin.t_order_fill_transaction_clean AS t1
+    LEFT JOIN analytics_uni_margin.t_position_transaction AS t6 ON t1.id = t6.order_fill_transaction_id
+    LEFT JOIN analytics_uni_margin.t_account AS t2 ON t1.account_id = t2.id
+    LEFT JOIN analytics_uni_margin.coin_contract_mapping AS t3 ON t1.contract_id = t3.contractId
+    WHERE date(t1.created_time) between xx and xx 根据具体需求判断 时间范围
+    GROUP BY 1
 ---
 
 历史对话：
