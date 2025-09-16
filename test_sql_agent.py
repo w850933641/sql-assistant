@@ -262,7 +262,7 @@ sql_chain = LLMChain(llm=llm, prompt=prompt, memory=memory, verbose=False)
 
 # Streamlit UI
 st.set_page_config(page_title="SQL 生成助手", layout="wide")
-st.title("🧠 SQL 生成助手 - 数字货币交易所")
+st.title("SQL 生成助手 - 数字货币交易所")
 
 question = st.text_area("请输入你要转换成SQL的问题：", height=150)
 
