@@ -4,6 +4,7 @@ from langchain.chains import LLMChain
 from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from sql_prompt import sql_prompt  # 你已有的 prompt 文件
+import os
 
 # ========== 页面基础配置 ==========
 st.set_page_config(
