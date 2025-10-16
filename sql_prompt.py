@@ -15,12 +15,28 @@ sql_prompt = PromptTemplate(
 - user_id :用户id 
 - deal_amount_total:合约交易量
 - deal_amount_spot：现货成交量
+- SUM(ifnull(deal_amount_total,0) + ifnull(deal_amount_spot,0))： 总交易量
+- fee_total（负数，取abs绝对值） :合约手续费
+- fee_spot（负数，取abs绝对值）：现货手续费
+- sum(ifnull(-fee_total,0)+ifnull(-fee_spot,0)) ：总手续费
 - topup_amount: 入金金额
 - retention_fee_theo_C	合约留存手续费(扣除各种抵扣和反佣之后的手续费)
 - retention_fee_theo_S	现货留存手续费
 - retention_fee_theo	total留存手续费
 - fee_deducted_C	合约手续费_扣除全部(扣除各种抵扣之后的手续费)
-- fee_deducted	    手续费_扣除全部
+- fee_deducted	    手续费_扣除全部（待定）
+- cash_gift_issue_total ：体验金发放  
+- cash_gift_recycle_total：体验金回收
+- deduct_funding_fee_pro（负数，取abs绝对值）：体验金使用_资金费
+- deduct_fee_pro（负数，取abs绝对值）： 体验金使用_手续费
+- deduct_loss_pro（负数，取abs绝对值）： 体验金使用_亏损
+- deduct_liquidation_fee_pro（负数，取abs绝对值）： 体验金使用_清算费
+- retention_fee_theo：理论返佣
+- sum(IFNULL(-deduct_funding_fee_pro,0)+IFNULL(-deduct_fee_pro,0)+IFNULL(-deduct_loss_pro,0)+IFNULL(-deduct_liquidation_fee_pro,0)) AS 体验金使用
+- sum(IFNULL(-fee_u,0) + IFNULL(-fee_coin,0) + IFNULL(-fee_pro,0) + IFNULL(-fee_spot,0) 
+    - IFNULL(-firm_costE_discount_fee,0)- IFNULL(deduct_wxt_pro,0)- IFNULL(fee_wxt_discount,0) 
+    - IFNULL(coupon_issue,0)- IFNULL(coupon_recycle,0))
+    as 手续费_扣除抵扣
 
 ### 表：user_bydaybase_vip  vip用户表 ，有分区，分区字段sta_date, 比如昨天的分区，所有 有vip level 的用户都会出现在昨天的分区；如果没出现就默认0
 - sta_date：日期
@@ -73,14 +89,16 @@ FROM analysis_report.std_eff_new_eftts
 - sta_date：日期分区（需要哪一天的balance就设置那一天即可） 
 - mark_price : 那一天的折合美金的汇率
  
-### 表：agent_bydaybase_all_clean 这个表是代理每日数据，包括他伞下用户的交易数据(单位：美金)的加总，有分区
+### 表：agent_bydaybase_all_clean 这个表是代理每日数据（代理维度的需求可以用这个表！），包括他伞下用户的交易数据(单位：美金)的加总，有分区
 - sta_date: 分区字段
 - agent_name: 代理名称
 - agent_user_id: 代理user_id
+- agent_user_id_p0: 最上一层代理，俗称渠道UID
+- agent_name_p0: 渠道名字 
 - create_time: 代理创建时间
 - agent_level: 代理层级 ，0 是最高 ，然后往下1，2，3。。。
-- agent_rebate_rate	代理返佣比例
-- partner: 所属partner
+- rebate_amount_agent_new :代理返佣
+- partner: 所属组
 - staff: 所属商务
 - topup_amount: 充值金额
 - transfer_amount: 内转金额
@@ -102,24 +120,33 @@ FROM analysis_report.std_eff_new_eftts
 - eff_user_cnt_eftts: 有效新增人数_现货eftts
 - eff_user_cnt_overseas: 有效新增人数_海外
 - fst_topup_cnt: 首充人数
-- 合约（pro）交易量 ：deal_amount_total 
-- 合约手续费 fee_total(负数，需要abs绝对值一下)
-- 现货交易量，deal_amount_spot
-- 现货手续费 fee_spot(负数，需要abs绝对值一下)
-
-如果计算 total 交易量， deal_amount_spot+ deal_amount_total
-        total 手续费， fee_total +  fee_spot (负数，需要abs绝对值一下)
-
+- deal_amount_total :合约交易量
+- fee_total(负数，需要abs绝对值一下) : 合约手续费
+- deal_amount_spot : 现货交易量
+- fee_spot(负数，需要abs绝对值一下):现货手续费
+- deal_amount_total + deal_amount_spot : 总交易量
+- -(fee_total + fee_spot) : 总手续费
+- cash_gift_issue_total :体验金发放
+- cash_gift_recycle_total :体验金回收
+- 体验金使用： sum(IFNULL(-deduct_funding_fee_pro,0)+IFNULL(-deduct_fee_pro,0)+IFNULL(-deduct_loss_pro,0)+IFNULL(-deduct_liquidation_fee_pro,0))  
+- 手续费_扣除抵扣 : sum(IFNULL(-fee_u,0) + IFNULL(-fee_coin,0) + IFNULL(-fee_pro,0) + IFNULL(-fee_spot,0) 
+    - IFNULL(-firm_costE_discount_fee,0)- IFNULL(deduct_wxt_pro,0)- IFNULL(fee_wxt_discount,0) 
+    - IFNULL(coupon_issue,0)- IFNULL(coupon_recycle,0))
+- 成本体验金等: SUM(IFNULL(-firm_costA_cashgift,0)+ IFNULL(-firm_costD_false_total,0) + IFNULL(bonus_lauchpool,0))  
+- eff_user_cnt：有效新增
+- trader_cnt_total :交易人数（日活）
+- cust_cnt : 注册     
+- fst_topup_cnt:首充
 
 
 ## 数据库二：analytics_flink
 
 ### 表：user_agent_relation_full 这个表包含所有的用户，无需分区
 - user_id：用户ID
-- partner: 如果partner = '官网'，就是官网用户；如果partner != '官网' ，就是直客用户（直客在我们公司是代理拉来的直客的意思）
+- partner: 所属组（如果partner = '官网'，就是官网用户；如果partner != '官网' ，就是直客用户（直客在我们公司是代理拉来的直客的意思））
 - agent_user_id :上级代理,如果需要统计所有的代理，那就是这个字段，如果需求中需要排除掉代理，那么就not in (select distinct agent_user_id from analytics_flink.user_agent_relation_full where agent_user_id is not null)
-- agent_user_id_p0 :最上级代理，也可以称之为渠道代理
-- staff :商务
+- agent_user_id_p0 :所属渠道（最上级代理，也可以称之为渠道代理）
+- staff : 所属商务
 
 ### 表：user_info 这个表包含所有的用户，无需分区
 - id：用户ID，通常为其他表的user_id
