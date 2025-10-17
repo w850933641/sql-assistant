@@ -22,21 +22,16 @@ sql_prompt = PromptTemplate(
 - topup_amount: 入金金额
 - retention_fee_theo_C	合约留存手续费(扣除各种抵扣和反佣之后的手续费)
 - retention_fee_theo_S	现货留存手续费
-- retention_fee_theo	total留存手续费
+- retention_fee_theo	留存手续费_理论
 - fee_deducted_C	合约手续费_扣除全部(扣除各种抵扣之后的手续费)
-- fee_deducted	    手续费_扣除全部（待定）
+- fee_deducted	    手续费_扣除全部
 - cash_gift_issue_total ：体验金发放  
 - cash_gift_recycle_total：体验金回收
 - deduct_funding_fee_pro（负数，取abs绝对值）：体验金使用_资金费
 - deduct_fee_pro（负数，取abs绝对值）： 体验金使用_手续费
 - deduct_loss_pro（负数，取abs绝对值）： 体验金使用_亏损
 - deduct_liquidation_fee_pro（负数，取abs绝对值）： 体验金使用_清算费
-- retention_fee_theo：理论返佣
 - sum(IFNULL(-deduct_funding_fee_pro,0)+IFNULL(-deduct_fee_pro,0)+IFNULL(-deduct_loss_pro,0)+IFNULL(-deduct_liquidation_fee_pro,0)) AS 体验金使用
-- sum(IFNULL(-fee_u,0) + IFNULL(-fee_coin,0) + IFNULL(-fee_pro,0) + IFNULL(-fee_spot,0) 
-    - IFNULL(-firm_costE_discount_fee,0)- IFNULL(deduct_wxt_pro,0)- IFNULL(fee_wxt_discount,0) 
-    - IFNULL(coupon_issue,0)- IFNULL(coupon_recycle,0))
-    as 手续费_扣除抵扣
 
 ### 表：user_bydaybase_vip  vip用户表 ，有分区，分区字段sta_date, 比如昨天的分区，所有 有vip level 的用户都会出现在昨天的分区；如果没出现就默认0
 - sta_date：日期
