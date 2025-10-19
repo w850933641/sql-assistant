@@ -61,12 +61,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# 更改于10/19，因为说温度系数不允许为0
+# llm = ChatOpenAI(
+#     model="gpt-5",   
+#     temperature=0,
+#     openai_api_key=os.getenv("OPENAI_API_KEY")   # 关键
+# )
+
 # 初始化 LLM
 llm = ChatOpenAI(
-    model="gpt-5",  # 或 gpt-4.1，如果你开通了
-    temperature=0,
-    openai_api_key=os.getenv("OPENAI_API_KEY")   # 关键
+    model="gpt-5",  # 或 gpt-4.1
+    openai_api_key=os.getenv("OPENAI_API_KEY")
 )
+
 
 if "memory" not in st.session_state:
     st.session_state.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
