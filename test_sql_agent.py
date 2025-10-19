@@ -64,7 +64,8 @@ st.markdown("""
 # 初始化 LLM
 llm = ChatOpenAI(
     model="gpt-5",  # 或 gpt-4.1
-    openai_api_key=os.getenv("OPENAI_API_KEY")
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    temperature=1  # 
 )
 
 
