@@ -61,13 +61,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# 更改于10/19，因为说温度系数不允许为0
-# llm = ChatOpenAI(
-#     model="gpt-5",   
-#     temperature=0,
-#     openai_api_key=os.getenv("OPENAI_API_KEY")   # 关键
-# )
-
 # 初始化 LLM
 llm = ChatOpenAI(
     model="gpt-5",  # 或 gpt-4.1
