@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from sql_prompt import sql_prompt  # 你已有的 prompt 文件
 import os
+from metrics_config import ALL_METRICS
 
 # ========== 页面基础配置 ==========
 st.set_page_config(
@@ -126,9 +127,8 @@ with st.form("sql_form"):
     st.markdown("📊 **指标（可多选或手动添加）**")
 
     selected_metrics = st.multiselect(
-        "从常用指标中选择：",
-        predefined_metrics,
-        default=example.get("metrics", ["注册人数", "交易人数"])
+        "从指标中选择：",
+        ALL_METRICS
     )
 
     custom_metrics_input = st.text_input(
